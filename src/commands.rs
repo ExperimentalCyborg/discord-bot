@@ -1,12 +1,13 @@
+use log::{debug, info, warn, error};
 use crate::{Context, Data, Error};
 
 // Hooks ->
 
 pub fn pre_command(ctx: Context<'_>) {
-    println!("Executing command {}...", ctx.command().qualified_name);
+    debug!("Executing command {} ...", ctx.command().qualified_name);
 }
 pub fn post_command(ctx: Context<'_>) {
-    println!("Executed command {}!", ctx.command().qualified_name);
+    debug!("Executed command {}", ctx.command().qualified_name);
 }
 
 pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
@@ -79,11 +80,11 @@ pub async fn getvotes(
     } else {
         let mut response = String::new();
         for (choice, num_votes) in ctx.data().votes.lock().unwrap().iter() {
-            response += &format!("{}: {} votes", choice, num_votes);
+            response += &format!("{}: {} vote(s)\n", choice, num_votes);
         }
 
         if response.is_empty() {
-            response += "Nobody has voted for anything yet :(";
+            response += "Nobody has voted for anything yet.";
         }
 
         ctx.say(response).await?;

@@ -14,7 +14,7 @@ pub async fn event_dispatcher(
             info!("Authenticated as {} ID {}", data_about_bot.user.name, data_about_bot.user.id);
         }
         serenity::FullEvent::GuildCreate { guild, is_new, } => {
-            info!("Joining guild {} ID {}", guild.name, guild.id);
+            info!("Joining guild \"{}\" ID {}", guild.name, guild.id);
             poise::builtins::register_in_guild(ctx, &framework.options().commands, guild.id).await?;
         }
         serenity::FullEvent::GuildDelete { incomplete, full } => {
@@ -25,13 +25,10 @@ pub async fn event_dispatcher(
                 None => {name = "<UNKNOWN>".to_string();}
             }
 
-            if incomplete.unavailable {
-                info!("Guild unavailable: {} ID {}", name, incomplete.id)
-            } else {
-                info!("Removed from guild: {} ID {}", name, incomplete.id)
+            match incomplete.unavailable {
+                true => info!("Guild unavailable: \"{}\" ID {}", name, incomplete.id),
+                false => info!("Removed from guild: \"{}\" ID {}", name, incomplete.id)
             }
-
-            //TODO log whether we got removed from the guild or if the guild is otherwise unavailable
         }
         serenity::FullEvent::MessageDeleteBulk { channel_id, multiple_deleted_messages_ids, guild_id } => {
             // todo
