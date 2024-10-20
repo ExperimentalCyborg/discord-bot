@@ -1,0 +1,3 @@
+[env]
+DISCORD_TOKEN="<TOKEN_HERE>"
+RUST_LOG="discord_bot=DEBUG"
