@@ -57,9 +57,11 @@ pub async fn event_dispatcher(
         serenity::FullEvent::GuildMemberUpdate { old_if_available, new, event } => {
             // todo
         }
+        serenity::FullEvent::Resume { event } => {
+            info!("Reconnected to gateway");
+        }
         _ => {
             debug!("Received unhandled event: {:?}", event.snake_case_name());
-            // todo log as debug
         }
     }
     Ok(())

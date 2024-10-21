@@ -1,13 +1,15 @@
 #![warn(clippy::str_to_string)]
 
 use env_logger::Env;
-use log::{debug, info, warn, error};
+use log::{debug, info, warn, error, LevelFilter};
 use std::{
     collections::HashMap,
     env::var,
     sync::Mutex,
 };
+use clap::{Parser, crate_name, crate_version, crate_description, crate_authors};
 use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::model::Timestamp;
 
 mod commands;
 mod events;
@@ -16,10 +18,47 @@ mod events;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
+#[derive(Parser, Debug)]
+#[command(version, about, author)]
+struct Args {
+    /// Directory path to SQLite db storage
+    #[arg(short, long)]
+    db_path: String,
+
+    /// Discord bot token
+    #[arg(short, long)]
+    bot_token: String,
+
+    /// Log level for the CLI. Default is Info.
+    #[arg(long, value_enum)]
+    log_level: Option<LevelFilter>,
+
+    /// Log file path. When omitted, no log file is used.
+    #[arg(long)]
+    log_file_path: Option<String>,
+
+    /// Log level for the log file
+    #[arg(long, value_enum)]
+    log_file_level: Option<LevelFilter>,
+
+    /// OpenAI compatible API URL. AI functions disabled when omitted.
+    #[arg(long)]
+    openai_api_root: Option<String>,
+
+    /// API token for OpenAI compatible API, if required.
+    #[arg(long)]
+    openai_api_token: Option<String>,
+}
+
 // Custom user data passed to all command functions
 pub struct Data {
-    // TODO global data of some kind, make sure it's wrapped for safe multithreading and initialize it in framework.setup
-    votes: Mutex<HashMap<String, u32>>,
+    // Read only attributes
+    time_started: Timestamp,
+    args: Args,
+    app_name: String,
+    app_version: String,
+    app_description: String,
+    app_authors: String,
 }
 
 async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
@@ -41,13 +80,26 @@ async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
 
 #[tokio::main]
 async fn main() {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    let args = Args::parse();
+
+    debug!("Started with arguments: {:?}", args);
+    env_logger::Builder::default()
+        .filter_level(LevelFilter::Error) // Everything except our own code
+        .filter_module("discord_bot", args.log_level.unwrap_or(LevelFilter::Info)) // Our own code
+        .init();
+    let time_started = Timestamp::now();
     info!("Application starting");
 
+    debug!("Configuring Poise");
     // FrameworkOptions contains all of poise's configuration option in one struct
     // Every option can be omitted to use its default value
     let options = poise::FrameworkOptions {
-        commands: vec![commands::help(), commands::vote(), commands::getvotes()],
+        commands: vec![
+            commands::info(),
+            commands::help(),
+            commands::ping(),
+            commands::roll(),
+        ],
 
         prefix_options: poise::PrefixFrameworkOptions {
             // prefix: Some("~".into()),
@@ -96,32 +148,36 @@ async fn main() {
         ..Default::default()
     };
 
+    debug!("Gathering client settings");
+    let token = args.bot_token.clone();
+    let intents = serenity::GatewayIntents::non_privileged() |
+        serenity::GatewayIntents::MESSAGE_CONTENT | serenity::GatewayIntents::GUILD_MEMBERS;
+
+    debug!("Initializing globally shared data");
+    let global_data = Data {
+        time_started,
+        args,
+
+        app_name: crate_name!().to_string(),
+        app_version: crate_version!().to_string(),
+        app_description: crate_description!().to_string(),
+        app_authors: crate_authors!("\n").to_string(),
+    };
+
+    debug!("Setting up Serenity client");
     let framework = poise::Framework::builder()
-        .setup(move |ctx, _ready, framework| {
-            Box::pin(async move {
-                // poise::builtins::register_in_guild(ctx, &framework.options().commands, 0).await?;
-                Ok(Data {
-                    votes: Mutex::new(HashMap::new()),
-                })
-            })
-        })
+        .setup(move |ctx, _ready, framework| { Box::pin(async move { Ok(global_data) }) })
         .options(options)
         .build();
-
-    let token = var("DISCORD_TOKEN")
-        .expect("Missing `DISCORD_TOKEN` env var, see README for more information.");
-    let intents =
-        serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT | serenity::GatewayIntents::GUILD_MEMBERS;
-
     let client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
         .await;
-    
+
     info!("Connecting to Discord");
-    match client.unwrap().start().await {
+    match client.unwrap().start().await {  // todo handle sigint?
         Ok(_) => info!("Exited successfully"),
         Err(e) => {
             error!("Critical: {}", e)
-        },
-    }
+        }
+    };
 }

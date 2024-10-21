@@ -19,6 +19,10 @@ poise = "0.6"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 env_logger = "0.11"
 log = "0.4.22"
+clap = { version = "4.5.20", features = ["derive", "cargo"] }
+chrono = "0.4.38"
+regex = "1.11.0"
+rand = "0.8.5"
 
 [profile.release]
 strip = true  # Remove debug symbols, we're not attaching debuggers to release binaries, and it saves a couple mb
