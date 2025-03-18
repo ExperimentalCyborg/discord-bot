@@ -32,5 +32,5 @@ COPY --from=builder /app/target/release/discord-bot /app/discord-bot
 ENV DISCORD_BOT_TOKEN=""
 ENV DB_PATH="/data/bot.sqlite"
 
-ENTRYPOINT ["./discord-bot"]
-CMD ["--db-path", "${DB_PATH}", "--bot-token", "${DISCORD_BOT_TOKEN}"]
+# Run the bot with environment variables
+CMD ./discord-bot --db-path "$DB_PATH" --bot-token "$DISCORD_BOT_TOKEN"
