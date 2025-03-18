@@ -35,6 +35,55 @@ pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
 - trackmodactions
  */
 
+/// Track users joining and leaving
+///
+/// Events will be logged to a channel that must be specified before the feature can be enabled.
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", subcommands("trackjoinleaves_enable", "trackjoinleaves_disable"), subcommand_required)]
+pub async fn trackjoinleaves(_: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
+
+/// Enable user join/leave tracking
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "enable")]
+pub async fn trackjoinleaves_enable(
+    ctx: Context<'_>,
+    #[description = "Channel to log user join/leave events to"]
+    channel: poise::serenity_prelude::ChannelId,
+) -> Result<(), Error> {
+    let guild = ctx.guild().unwrap().clone();
+    let _channel = guild.channels.get(&channel);
+    if _channel.is_none() {
+        ctx.send(CreateReply::default()
+            .content("Channel not found.".to_string())
+            .ephemeral(true)
+        ).await.unwrap();
+        return Ok(());
+    }else if _channel.unwrap().permissions_for_user(ctx.cache(), ctx.cache().current_user().id).unwrap().send_messages() == false {
+        ctx.send(CreateReply::default()
+            .content("I do not have permission to send messages to that channel.".to_string())
+            .ephemeral(true)
+        ).await.unwrap();
+        return Ok(());
+    }
+    ctx.data().database.set_guild_value(&ctx.guild_id().unwrap(), &"config.track_joinleaves", &channel).await.unwrap();
+    ctx.send(CreateReply::default()
+        .content(format!("Message edit tracking enabled. Logging to {}", channel.mention()))
+        .ephemeral(true)
+    ).await.unwrap();
+    Ok(())
+}
+
+/// Disable user join/leave tracking
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "disable")]
+pub async fn trackjoinleaves_disable(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.data().database.delete_guild_value(&ctx.guild_id().unwrap(), &"config.track_joinleaves").await.unwrap();
+    ctx.send(CreateReply::default()
+        .content("Join/leave tracking disabled.".to_string())
+        .ephemeral(true)
+    ).await.unwrap();
+    Ok(())
+}
+
 /// Track message edits and deletions
 ///
 /// Events will be logged to a channel that must be specified before the feature can be enabled.

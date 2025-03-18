@@ -9,6 +9,7 @@ mod commands;
 mod events;
 mod database;
 mod ai;
+mod tools;
 
 // Types used by all command functions
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -107,6 +108,7 @@ async fn main() {
             commands::ping(),
             commands::roll(),
             commands::trackmessageedits(),
+            commands::trackjoinleaves(),
         ],
 
         prefix_options: poise::PrefixFrameworkOptions {

@@ -25,8 +25,12 @@
     sqlx = {  version = "0.8.2", features = ["default", "runtime-tokio-native-tls", "sqlite", "chrono"] }
 
 [profile.release]
-    strip = true  # Remove debug symbols, we're not attaching debuggers to release binaries, and it saves a couple mb
-    lto = "thin"  # Optimize across external dependencies too
-    codegen-units = 1  # Single threaded compilation to enable optimizations that aren't available in multithreaded compile
-    panic = "unwind"  # Force enable panic handling per thread instead of killing the whole app so a bugged command doesn't bring the whole bot down
     incremental = true  # Don't do a full recompile of stuff that didn't change since last compilation
+    strip = true  # Remove debug symbols, we're not attaching debuggers to release binaries, and it saves a couple mb
+    panic = "unwind"  # Force enable panic handling per thread instead of killing the whole app so a bugged command doesn't bring the whole bot down
+    lto = "thin"  # Optimize across external dependencies too
+
+[profile.optimal]
+    inherits = "release"
+    lto = "fat"
+    codegen-units = 1  # Single threaded compilation to enable optimizations that aren't available in multithreaded compile

@@ -257,8 +257,4 @@ impl Database {
 
         Ok(values)
     }
-
-    pub fn to_snowflake(&self, text: &str) -> Option<NonZeroU64> {
-        text.parse::<NonZeroU64>().ok()
-    }
 }

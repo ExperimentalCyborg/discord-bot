@@ -4,7 +4,7 @@ use poise::serenity_prelude::{Colour, CreateEmbed, Mentionable, Message, Message
 use poise::serenity_prelude::model::Timestamp;
 use poise::serenity_prelude::CreateMessage;
 use poise::serenity_prelude::EntityType::Str;
-use crate::serenity;
+use crate::{serenity, tools};
 use crate::{Context, Data, Error};
 
 pub async fn event_dispatcher(
@@ -53,29 +53,33 @@ pub async fn event_dispatcher(
             }
             let guild_id = guild_id.unwrap();
 
-            // Exit if we don't log these
-            let _lci = data.database.get_guild_value(&guild_id, &"config.track_msg_edits").await;
-            if _lci.is_err(){
-                return Ok(());
-            }
-
-            // todo make a helper function to convert snowflake strings to channel IDs, because we'll be doing this a dozen more times
-            let log_channel_id = data.database.to_snowflake(_lci.ok().unwrap().unwrap().as_str()).unwrap();
-            let log_channel_id = poise::serenity_prelude::model::id::ChannelId::from(log_channel_id);
+            // Exit if we don't log these // todo de-duplicate, we're doing this many times.
+            let _lci = match data.database.get_guild_value(&guild_id, &"config.track_msg_edits").await {
+                Ok(lci) => match lci {
+                    Some(l) => l,
+                    None => return Ok(())},
+                Err(_) => return Ok(())
+            };
 
             let (author, content, is_available) = {
                 let message = ctx.cache.message(channel_id, deleted_message_id);
                 match message {
                     None => ("Unknown".to_string(), "".to_string(), false),
-                    Some(m) => (
-                        m.author.mention().to_string(),
-                        m.content.clone(),
-                        true
-                    ),
+                    Some(m) => {
+                        if m.author.bot{
+                            return Ok(()); // Ignore bots
+                        }
+                        (
+                            m.author.mention().to_string(),
+                            m.content.clone(),
+                            true
+                        )
+                    },
                 }
             };
 
             // Log the message
+            let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
             log_channel_id.send_message(&ctx.http,
                  CreateMessage::new().embed(
                     CreateEmbed::new()
@@ -94,9 +98,13 @@ pub async fn event_dispatcher(
                 ).await?;
         }
         serenity::FullEvent::MessageUpdate { old_if_available, new, event } => {
-            if new.is_none(){ // todo this happens when an uncached message is edited...
+            if new.is_none(){
                 warn!("Failed to log edit due to a cache miss: {}", event.id);
                 return Ok(());
+            }
+
+            if new.clone().unwrap().author.bot{
+                return Ok(()); // Ignore messages from bots
             }
 
             let new_message = new.clone().unwrap();
@@ -110,14 +118,12 @@ pub async fn event_dispatcher(
             let guild_id = guild_id.unwrap();
 
             // Exit if we don't log these
-            let _lci = data.database.get_guild_value(&guild_id, &"config.track_msg_edits").await;
-            if _lci.is_err(){
-                return Ok(());
-            }
-
-            // todo make a helper function to convert snowflake strings to channel IDs, because we'll be doing this a dozen more times
-            let log_channel_id = data.database.to_snowflake(_lci.ok().unwrap().unwrap().as_str()).unwrap();
-            let log_channel_id = poise::serenity_prelude::model::id::ChannelId::from(log_channel_id);
+            let _lci = match data.database.get_guild_value(&guild_id, &"config.track_msg_edits").await {
+                Ok(lci) => match lci {
+                    Some(l) => l,
+                    None => return Ok(())},
+                Err(_) => return Ok(())
+            };
 
             let (is_available, old_content) = {
                 match old_message {
@@ -127,6 +133,7 @@ pub async fn event_dispatcher(
             };
 
             // Log the message
+            let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
             log_channel_id.send_message(&ctx.http,
                 CreateMessage::new().embed(
                     CreateEmbed::new()
@@ -157,10 +164,90 @@ pub async fn event_dispatcher(
             // todo
         }
         serenity::FullEvent::GuildMemberAddition { new_member } => {
-            // todo
+            let guild_id = new_member.guild_id;
+
+            // Exit if we don't log these
+            let _lci = match data.database.get_guild_value(&guild_id, &"config.track_joinleaves").await {
+                Ok(lci) => match lci {
+                    Some(l) => l,
+                    None => return Ok(())},
+                Err(_) => return Ok(())
+            };
+
+            let discriminator = match new_member.user.discriminator {
+                Some(d) => d.to_string(),
+                None => String::from("None (next gen account)")
+            };
+
+            // Log the message
+            let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
+            log_channel_id.send_message(&ctx.http,
+                CreateMessage::new().embed(
+                    CreateEmbed::new()
+                        .title("👋 User joined")
+                        .field("User:", new_member.user.mention().to_string(), false)
+                        .field("ID:", new_member.user.id.to_string(), false)
+                        .field("User name:", new_member.user.name.to_string(), false)
+                        .field("Discriminator:", discriminator, false)
+                        .field("Global display name:", new_member.clone().user.global_name.unwrap().to_string(), false)
+                        .field("Account age:", tools::user_account_age(new_member.user.id), false)
+                        .thumbnail(new_member.user.avatar_url().unwrap_or(String::from("")))
+                        .color(Colour::DARK_GREEN)
+                )
+            ).await?;
         }
         serenity::FullEvent::GuildMemberRemoval { guild_id, user, member_data_if_available } => {
-            // todo
+            // Exit if we don't log these
+            let _lci = match data.database.get_guild_value(&guild_id, &"config.track_joinleaves").await {
+                Ok(lci) => match lci {
+                    Some(l) => l,
+                    None => return Ok(())},
+                Err(_) => return Ok(())
+            };
+
+            let (server_nickname, member_age) = match member_data_if_available {
+                Some(m) => (
+                    m.clone().nick.unwrap_or(String::from("")),
+                    {
+                        match m.clone().joined_at{
+                            Some(s) => {
+                                let duration = chrono::Utc::now().signed_duration_since(chrono::DateTime::from_timestamp(s.unix_timestamp(), 0).unwrap());
+                                let days = duration.num_days();
+                                let hours = duration.num_hours() % 24;
+                                let minutes = duration.num_minutes() % 60;
+                                let seconds = duration.num_seconds() % 60;
+                                format!("{} days, {} hours, {} minutes, {} seconds", days, hours, minutes, seconds)
+                            },
+                            None => String::from("Unknown") // join timestamp unavailable
+                        }
+                    }
+                ),
+                None => (String::from(""), String::from("Unknown")) // member data unavailable
+            };
+
+            let discriminator = match user.discriminator {
+                Some(d) => d.to_string(),
+                None => String::from("None (next gen account)")
+            };
+
+            // Log the message
+            let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
+            log_channel_id.send_message(&ctx.http,
+                CreateMessage::new().embed(
+                    CreateEmbed::new()
+                        .title("🚪 User left")
+                        .field("User:", user.mention().to_string(), false)
+                        .field("ID:", user.id.to_string(), false)
+                        .field("User name:", user.name.to_string(), false)
+                        .field("Discriminator:", discriminator, false)
+                        .field("Global display name:", user.clone().global_name.unwrap_or(String::from("Unknown")), false)
+                        .field("Server nickname:", server_nickname, false)
+                        .field("Server membership age:", member_age, false)
+                        .field("Account age:", tools::user_account_age(user.id), false)
+                        .thumbnail(user.avatar_url().unwrap_or(String::from("")))
+                        .color(Colour::DARK_RED)
+                )
+            ).await?;
         }
         serenity::FullEvent::GuildMemberUpdate { old_if_available, new, event } => {
             // todo
