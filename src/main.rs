@@ -1,18 +1,14 @@
-#![warn(clippy::str_to_string)]
-
-use env_logger::Env;
 use log::{debug, info, warn, error, LevelFilter};
-use std::{
-    collections::HashMap,
-    env::var,
-    sync::Mutex,
-};
-use clap::{Parser, crate_name, crate_version, crate_description, crate_authors};
+use clap::{Parser, crate_version, crate_description, crate_authors};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::model::Timestamp;
+use tokio::signal;
+use crate::database::Database;
 
 mod commands;
 mod events;
+mod database;
+mod ai;
 
 // Types used by all command functions
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -54,11 +50,11 @@ struct Args {
 pub struct Data {
     // Read only attributes
     time_started: Timestamp,
-    args: Args,
-    app_name: String,
+    //args: Args, // todo remove?
     app_version: String,
     app_description: String,
     app_authors: String,
+    database: Database,
 }
 
 async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
@@ -82,34 +78,38 @@ async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
 async fn main() {
     let args = Args::parse();
 
-    debug!("Started with arguments: {:?}", args);
     env_logger::Builder::default()
-        .filter_level(LevelFilter::Error) // Everything except our own code
+        .filter_level(LevelFilter::Error) // Everything except our own code only prints >= error
         .filter_module("discord_bot", args.log_level.unwrap_or(LevelFilter::Info)) // Our own code
         .init();
     let time_started = Timestamp::now();
     info!("Application starting");
+    debug!("Arguments: {:?}", args);
+
+    let db_path = args.db_path.clone();
+    let db;
+    match Database::new(&db_path).await {
+        Ok(d) => {
+            db = d;
+        }
+        Err(e) => {
+            error!("Failed to initialize database: {}", e);
+            std::process::exit(1);
+        }
+    }
 
     debug!("Configuring Poise");
-    // FrameworkOptions contains all of poise's configuration option in one struct
-    // Every option can be omitted to use its default value
+    // FrameworkOptions contains all of poise's configuration options in one struct
     let options = poise::FrameworkOptions {
         commands: vec![
             commands::info(),
             commands::help(),
             commands::ping(),
             commands::roll(),
+            commands::trackmessageedits(),
         ],
 
         prefix_options: poise::PrefixFrameworkOptions {
-            // prefix: Some("~".into()),
-            // edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(
-            //     Duration::from_secs(3600),
-            // ))),
-            // additional_prefixes: vec![
-            //     poise::Prefix::Literal("hey bot"),
-            //     poise::Prefix::Literal("hey bot,"),
-            // ],
             ..Default::default()
         },
 
@@ -137,8 +137,7 @@ async fn main() {
             })
         }),
 
-        // Enforce command checks even for owners (enforced by default)
-        // Set to true to bypass checks, which is useful for testing
+        // Enforce command checks even for owners
         skip_checks_for_owners: false,
 
         event_handler: |ctx, event, framework, data| {
@@ -156,12 +155,11 @@ async fn main() {
     debug!("Initializing globally shared data");
     let global_data = Data {
         time_started,
-        args,
-
-        app_name: crate_name!().to_string(),
+        // args, // todo remove?
         app_version: crate_version!().to_string(),
         app_description: crate_description!().to_string(),
         app_authors: crate_authors!("\n").to_string(),
+        database: db,
     };
 
     debug!("Setting up Serenity client");
@@ -169,15 +167,45 @@ async fn main() {
         .setup(move |ctx, _ready, framework| { Box::pin(async move { Ok(global_data) }) })
         .options(options)
         .build();
-    let client = serenity::ClientBuilder::new(token, intents)
-        .framework(framework)
-        .await;
+    let mut client;
+    match serenity::ClientBuilder::new(token, intents).framework(framework).await {
+        Ok(c) => {
+            client = c;
+        }
+        Err(e) => {
+            error!("Failed to initialize client: {}", e);
+            std::process::exit(1);
+        }
+    }
+    client.cache.set_max_messages(5000);
+
+    // Set up SIGTERM handling (Unix-only)
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("Failed to register SIGTERM handler")
+            .recv()
+            .await;
+        println!("Received SIGTERM, shutting down gracefully...");
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>(); // Never resolves on non-Unix platforms
 
     info!("Connecting to Discord");
-    match client.unwrap().start().await {  // todo handle sigint?
-        Ok(_) => info!("Exited successfully"),
-        Err(e) => {
-            error!("Critical: {}", e)
+    // Create a future that completes when we receive either Ctrl+C/SIGINT or SIGTERM
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {
+            warn!("Received SIGINT, shutting down...");
+            client.shard_manager.shutdown_all().await;
         }
-    };
+        _ = terminate => {
+            warn!("Received SIGTERM, shutting down...");
+            client.shard_manager.shutdown_all().await;
+        }
+
+        _ = client.start_autosharded() => {
+            warn!("Exited.");
+        }
+    }
 }

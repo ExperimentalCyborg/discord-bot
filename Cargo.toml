@@ -1,32 +1,32 @@
 [package]
-name = "discord-bot"
-version = "0.1.0"
-edition = "2021"
-readme = "README.md"
-authors = ["Experimental Cyborg <experimentalcyborg@protonmail.ch>"]
-description = "A Discord bot that talks."
-license = "MIT"
+    name = "discord-bot"
+    version = "0.1.0"
+    edition = "2021"
+    readme = "README.md"
+    authors = ["Experimental Cyborg <experimentalcyborg@protonmail.ch>"]
+    description = "A Discord bot that talks."
+    license = "MIT"
 
-documentation = "https://docs.rs/*" # todo
-repository = "https://github.com/ExperimentalCyborg/*" # todo
-homepage = "https://github.com/ExperimentalCyborg/*" # todo
-keywords = [] # todo
-categories = [] # todo
-exclude = [".github/*"]
+    documentation = "https://docs.rs/*" # todo
+    repository = "https://github.com/ExperimentalCyborg/*" # todo
+    homepage = "https://github.com/ExperimentalCyborg/*" # todo
+    keywords = [] # todo
+    categories = [] # todo
+    exclude = [".github/*"]
 
 [dependencies]
-poise = "0.6"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-env_logger = "0.11"
-log = "0.4.22"
-clap = { version = "4.5.20", features = ["derive", "cargo"] }
-chrono = "0.4.38"
-regex = "1.11.0"
-rand = "0.8.5"
+    poise = {  version = "0.6", features = ["default", "cache"] }
+    tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+    env_logger = "0.11"
+    log = "0.4.22"
+    clap = { version = "4.5.20", features = ["derive", "cargo"] }
+    chrono = "0.4.38"
+    rand = "0.9.0"
+    sqlx = {  version = "0.8.2", features = ["default", "runtime-tokio-native-tls", "sqlite", "chrono"] }
 
 [profile.release]
-strip = true  # Remove debug symbols, we're not attaching debuggers to release binaries, and it saves a couple mb
-lto = "thin"  # Optimize across external dependencies too
-codegen-units = 1  # Single threaded compilation to enable optimizations that aren't available in multithreaded compile
-panic = "unwind"  # Force enable panic handling per thread instead of killing the whole app so a bugged command doesn't bring the whole bot down
-incremental = true  # Don't do a full recompile of stuff that didn't change since last compilation
+    strip = true  # Remove debug symbols, we're not attaching debuggers to release binaries, and it saves a couple mb
+    lto = "thin"  # Optimize across external dependencies too
+    codegen-units = 1  # Single threaded compilation to enable optimizations that aren't available in multithreaded compile
+    panic = "unwind"  # Force enable panic handling per thread instead of killing the whole app so a bugged command doesn't bring the whole bot down
+    incremental = true  # Don't do a full recompile of stuff that didn't change since last compilation
