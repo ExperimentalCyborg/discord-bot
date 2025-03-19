@@ -131,6 +131,11 @@ pub async fn event_dispatcher(
                     Some(m) => (true, m.content.clone())
                 }
             };
+            let new_content = new_message.content.clone();
+
+            if is_available && old_content == new_content{
+                return Ok(());
+            }
 
             // Log the message
             let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
@@ -148,7 +153,7 @@ pub async fn event_dispatcher(
                                        "Old message content unavailable."
                                    }
                                }, old_content, false)
-                        .field("New:", new.clone().unwrap().content, false)
+                        .field("New:", new_content, false)
                         .color(Colour::DARK_TEAL)
                 )
             ).await?;

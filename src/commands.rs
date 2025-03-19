@@ -29,7 +29,6 @@ pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
 // Commands ->
 
 /* todo
-- trackjoinleaves
 - trackprofiles
 - trackvc
 - trackmodactions
@@ -201,7 +200,7 @@ pub async fn info(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Show this help menu
-#[poise::command(slash_command)]
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
 pub async fn help(
     ctx: Context<'_>,
     #[description = "Command to show help about"]
