@@ -188,7 +188,6 @@ async fn main() {
             .expect("Failed to register SIGTERM handler")
             .recv()
             .await;
-        println!("Received SIGTERM, shutting down gracefully...");
     };
 
     #[cfg(not(unix))]
