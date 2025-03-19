@@ -32,5 +32,9 @@ COPY --from=builder /app/target/release/discord-bot /app/discord-bot
 ENV DISCORD_BOT_TOKEN=""
 ENV DB_PATH="/data/bot.sqlite"
 
-# Run the bot with environment variables
-CMD ./discord-bot --db-path "$DB_PATH" --bot-token "$DISCORD_BOT_TOKEN"
+# Create an entrypoint script
+RUN echo '#!/bin/sh\n\
+exec ./discord-bot --db-path "$DB_PATH" --bot-token "$DISCORD_BOT_TOKEN" "$@"' > /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
