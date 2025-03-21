@@ -22,9 +22,10 @@ Resources
 - User join/leave tracking
 - ~~Userprofile edit tracking~~
 - ~~Audit log tracking~~
+- ~~Reaction roles~~
 
 Event logs are sent to whichever text channel you specify. Each tracking feature has its own settings and can share the 
-same channel with other features if desired.
+same channel with other features if desired. Only a server admin can configure the bot.
 
 ### ~~AI~~
 If you have an OpenAI API compatible endpoint available (for example your own ollama, an OpenAI subscription, or a cloud service), you can enable AI features.
@@ -38,11 +39,11 @@ If you have an OpenAI API compatible endpoint available (for example your own ol
 ## Privacy
 The bot only communicates with the Discord gateway servers ~~, and optionally the OpenAI-compatible REST api you've 
 configured~~. You, the operator, have full control over the data ~~, and through the opt-in role for AI, so do your 
-discord guild members.~~
+discord server members. Make sure to allow your server members to opt-in themselves using reaction roles.~~
 
 ## Data storage
 By default, the bot uses an embedded SQLite database which stores everything in a local file. 
-~~Optionally an external database like PostgreSQL can be used.~~ (todo)
+~~Optionally an external database like PostgreSQL can be used.~~
 
 ## Running locally
 Install the Rust programming language compiler:
@@ -59,6 +60,8 @@ Run the bot:
 ```
 `--db-path` must refer to a directory. It will create the database file on its own. Run `discord-bot` with `--help` to 
 see all the available options.
+
+If you don't have a bot token, follow [these instructions](#set-up-your-discord-application-bot-account)
 
 ## Running in Docker
 
