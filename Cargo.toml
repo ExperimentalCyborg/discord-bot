@@ -4,14 +4,14 @@
     edition = "2021"
     readme = "README.md"
     authors = ["Experimental Cyborg <experimentalcyborg@protonmail.ch>"]
-    description = "A Discord bot that talks."
+    description = "Beep boop 🤖"
     license = "MIT"
 
-    documentation = "https://docs.rs/*" # todo
-    repository = "https://github.com/ExperimentalCyborg/*" # todo
-    homepage = "https://github.com/ExperimentalCyborg/*" # todo
-    keywords = [] # todo
-    categories = [] # todo
+    # documentation = "https://docs.rs/*" # todo
+    repository = "https://github.com/ExperimentalCyborg/discord-bot"
+    homepage = "https://github.com/ExperimentalCyborg/discord-bot"
+    keywords = ["discord", "bot", "ai", "cyborg"]
+    categories = []  # none apply
     exclude = [".github/*"]
 
 [dependencies]

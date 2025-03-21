@@ -1,0 +1,15 @@
+services:
+  discord-bot:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: discord-bot
+    restart: unless-stopped
+    environment:
+      - DISCORD_BOT_TOKEN=${BOT_TOKEN}  # Define this value in the .env file
+    volumes:
+      - bot-data:/data  # The SQLite database will be stored here, unless you specify an external database to use.
+
+volumes:
+  bot-data:
+    name: discord-bot-data
