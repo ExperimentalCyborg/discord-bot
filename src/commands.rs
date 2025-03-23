@@ -1,3 +1,4 @@
+use std::path::absolute;
 use log::{debug};
 use poise::CreateReply;
 use poise::serenity_prelude::{Colour, CreateEmbed, CreateEmbedFooter, Mentionable};
@@ -227,7 +228,7 @@ pub async fn roll(
     sides: Option<u8>,
     #[description = "How much to add to or subtract from the total"]
     offset: Option<i32>,
-    #[description = "Describes what the roll was for"]
+    #[description = "Describes what the roll is for"]
     purpose: Option<String>,
     #[description = "Don't show the result to anyone else"]
     hide: Option<bool>,
@@ -243,7 +244,7 @@ pub async fn roll(
     let mut results: Vec<i32> = vec![];
     { // Ensure the compiler that rng (which isn't Send) gets dropped before the next await
         let mut generator = rng();
-        let range = Uniform::try_from(1..sides).unwrap();
+        let range = Uniform::try_from(1..=sides).unwrap();
         for _ in 0..rolls {
             results.push(range.sample(&mut generator) as i32);
         }
@@ -266,6 +267,129 @@ pub async fn roll(
         "+"
     };
     text += format!("\n{}d{}{}{} = {}", rolls, sides, sign, offset, total).as_str();
+
+    // Send the result to the user as an embed
+    ctx.send(CreateReply::default()
+        .embed(CreateEmbed::new()
+            .description(text)
+        ).ephemeral(hide)
+    ).await?;
+    Ok(())
+}
+
+/// Pick a random number
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
+pub async fn number(
+    ctx: Context<'_>,
+    #[description = "Lowest number that can be picked. Defaults to 1"]
+    lower: Option<i32>,
+    #[description = "Highest number that can be picked. Defaults to 10"]
+    upper: Option<i32>,
+    #[description = "Describes what the number is for"]
+    purpose: Option<String>,
+    #[description = "Don't show the result to anyone else"]
+    hide: Option<bool>,
+) -> Result<(), Error> {
+    // Defaults
+    let purpose = purpose.unwrap_or("".to_string());
+    let hide = hide.unwrap_or(false);
+    let lower = lower.unwrap_or(1);
+    let upper = upper.unwrap_or(10);
+
+    if upper <= lower {
+        ctx.send(CreateReply::default()
+            .content(format!("{} - {} is not a valid range.", lower, upper))
+            .ephemeral(true)).await?;
+        return Ok(())
+    }
+
+    // Generate the random number
+    let result = {
+        let mut generator = rng();
+        let range = Uniform::try_from(lower..=upper).unwrap();
+        range.sample(&mut generator)
+    };
+
+    // Format the result text
+    let mut text = format!("# 🔢 {}", result);
+    if !purpose.is_empty() {
+        text += format!(" {}", purpose).as_str();
+    }
+
+    // Build the roll explanation text
+    text += format!("\nFrom {} to {}", lower, upper).as_str();
+
+    // Send the result to the user as an embed
+    ctx.send(CreateReply::default()
+        .embed(CreateEmbed::new()
+            .description(text)
+        ).ephemeral(hide)
+    ).await?;
+    Ok(())
+}
+
+/// Flip a coin
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
+pub async fn coinflip(
+    ctx: Context<'_>,
+    #[description = "Describes what the flip is for"]
+    purpose: Option<String>,
+    #[description = "Don't show the result to anyone else"]
+    hide: Option<bool>,
+) -> Result<(), Error> {
+    // Defaults
+    let purpose = purpose.unwrap_or("".to_string());
+    let hide = hide.unwrap_or(false);
+
+    // Generate the random number
+    let result = {
+        let mut generator = rng();
+        let range = Uniform::try_from(0..=1).unwrap();
+        if range.sample(&mut generator) > 0 {"Heads"} else {"Tails"}
+    };
+
+    // Format the result text
+    let mut text = format!("# 🪙 {}", result);
+    if !purpose.is_empty() {
+        text += format!(": {}", purpose).as_str();
+    }
+
+    // Send the result to the user as an embed
+    ctx.send(CreateReply::default()
+        .embed(CreateEmbed::new()
+            .description(text)
+        ).ephemeral(hide)
+    ).await?;
+    Ok(())
+}
+
+/// Randomly get a Yes or No answer
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
+pub async fn yesno(
+    ctx: Context<'_>,
+    #[description = "Describes what the decision is for"]
+    purpose: Option<String>,
+    #[description = "Don't show the result to anyone else"]
+    hide: Option<bool>,
+) -> Result<(), Error> {
+    // Defaults
+    let purpose = purpose.unwrap_or("".to_string());
+    let hide = hide.unwrap_or(false);
+
+    // Generate the random number
+    let result = {
+        let mut generator = rng();
+        let range = Uniform::try_from(1..=1000).unwrap();
+        let number = range.sample(&mut generator);
+        let result = if number % 2 == 0 {"Yes"} else {"No"};
+        if number == 1 {"Maybe"} else {result}
+    };
+
+    // Format the result text
+    let mut text = format!("# ❓ {}", result);
+    if !purpose.is_empty() {
+        text += format!(", {}", purpose).as_str();
+    }
 
     // Send the result to the user as an embed
     ctx.send(CreateReply::default()
