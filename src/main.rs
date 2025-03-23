@@ -110,8 +110,7 @@ async fn main() {
             commands::number(),
             commands::coinflip(),
             commands::yesno(),
-            commands::trackmessageedits(),
-            commands::trackjoinleaves(),
+            commands::track(),
         ],
 
         prefix_options: poise::PrefixFrameworkOptions {

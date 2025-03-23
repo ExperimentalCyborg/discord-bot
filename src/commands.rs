@@ -35,10 +35,18 @@ pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
 - trackmodactions
  */
 
+/// Log various events to custom text channels
+///
+/// Events will be logged to a channel that must be specified before the feature can be enabled.
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", subcommands("trackjoinleaves", "trackmessageedits"), subcommand_required)]
+pub async fn track(_: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
+
 /// Track users joining and leaving
 ///
 /// Events will be logged to a channel that must be specified before the feature can be enabled.
-#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", subcommands("trackjoinleaves_enable", "trackjoinleaves_disable"), subcommand_required)]
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "joinleave", subcommands("trackjoinleaves_enable", "trackjoinleaves_disable"), subcommand_required)]
 pub async fn trackjoinleaves(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -87,7 +95,7 @@ pub async fn trackjoinleaves_disable(ctx: Context<'_>) -> Result<(), Error> {
 /// Track message edits and deletions
 ///
 /// Events will be logged to a channel that must be specified before the feature can be enabled.
-#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", subcommands("trackmessageedits_enable", "trackmessageedits_disable"), subcommand_required)]
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "messageedits", subcommands("trackmessageedits_enable", "trackmessageedits_disable"), subcommand_required)]
 pub async fn trackmessageedits(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
