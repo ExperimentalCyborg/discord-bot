@@ -8,9 +8,9 @@ Note: Crossed out items are not yet implemented, but planned.
 ### Utilities
 Random generator:
 - D&D-style dice roll (e.g. 2d12+4). It rolls one 6-sided die if no options are given.
-- ~~Random number picker with custom range~~
-- ~~Coin flip~~
-- ~~Yes/No~~
+- Random number picker with custom range
+- Coin flip
+- Yes/No
 
 Resources
 - ~~Image search - get a random image from Unsplash based on given search terms.~~
