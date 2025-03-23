@@ -23,6 +23,7 @@ pub fn post_command(ctx: Context<'_>) {
 }
 
 pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
+    // todo implement configurable bot-muted role that disables commands entirely for a user who has it
     // Ok(false) // Command does not get to run
     Ok(true) // Command gets to run
 }
@@ -394,9 +395,13 @@ pub async fn yesno(
     };
 
     // Format the result text
-    let mut text = format!("# ❓ {}", result);
-    if !purpose.is_empty() {
-        text += format!(", {}", purpose).as_str();
+    let text;
+    if purpose.is_empty() {
+        text = format!("# ❓ {}", result);
+    } else if purpose.ends_with("?") {
+        text = format!("# ❓ {} {}", purpose, result);
+    } else {
+        text = format!("# ❓ {}? {}", purpose, result);
     }
 
     // Send the result to the user as an embed
