@@ -193,7 +193,7 @@ pub async fn event_dispatcher(
 
             let discriminator = match new_member.user.discriminator {
                 Some(d) => d.to_string(),
-                None => String::from("None (next gen account)")
+                None => String::from("None")
             };
 
             // Log the message
@@ -203,13 +203,13 @@ pub async fn event_dispatcher(
                     CreateEmbed::new()
                         .title("👋 User joined")
                         .field("User:", new_member.user.mention().to_string(), false)
-                        .field("ID:", new_member.user.id.to_string(), false)
-                        .field("User name:", new_member.user.name.to_string(), false)
-                        .field("Discriminator:", discriminator, false)
-                        .field("Global nickname:", new_member.clone().user.global_name.unwrap_or(String::from("")), false)
+                        .field("User name:", new_member.user.name.to_string(), true)
+                        .field("Discriminator:", discriminator, true)
+                        .field("Global nickname:", new_member.clone().user.global_name.unwrap_or(String::from("")), true)
                         .field("Account age:", tools::user_account_age(new_member.user.id), false)
                         .thumbnail(new_member.user.avatar_url().unwrap_or(String::from("")))
                         .color(Colour::DARK_GREEN)
+                        .footer(CreateEmbedFooter::new(format!("User ID: {}", new_member.user.id)))
                 )
             ).await?;
         }
@@ -244,7 +244,7 @@ pub async fn event_dispatcher(
 
             let discriminator = match user.discriminator {
                 Some(d) => d.to_string(),
-                None => String::from("None (next gen account)")
+                None => String::from("None")
             };
 
             // Log the message
@@ -254,15 +254,15 @@ pub async fn event_dispatcher(
                     CreateEmbed::new()
                         .title("🚪 User left")
                         .field("User:", user.mention().to_string(), false)
-                        .field("ID:", user.id.to_string(), false)
-                        .field("User name:", user.name.to_string(), false)
-                        .field("Discriminator:", discriminator, false)
-                        .field("Global nickname:", user.clone().global_name.unwrap_or(String::from("")), false)
-                        .field("Server nickname:", server_nickname, false)
+                        .field("User name:", user.name.to_string(), true)
+                        .field("Discriminator:", discriminator, true)
+                        .field("Global nickname:", user.clone().global_name.unwrap_or(String::from("")), true)
+                        .field("Server nickname:", server_nickname, true)
                         .field("Server membership age:", member_age, false)
                         .field("Account age:", tools::user_account_age(user.id), false)
                         .thumbnail(user.avatar_url().unwrap_or(String::from("")))
                         .color(Colour::DARK_RED)
+                        .footer(CreateEmbedFooter::new(format!("User ID: {}", user.id)))
                 )
             ).await?;
         }
