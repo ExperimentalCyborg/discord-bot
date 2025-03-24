@@ -1,6 +1,6 @@
 use std::num::NonZeroU16;
 use log::{debug, info, warn, error};
-use poise::serenity_prelude::{Colour, CreateEmbed, Mentionable, Message, MessageRef};
+use poise::serenity_prelude::{Colour, CreateEmbed, CreateEmbedFooter, Mentionable, Message, MessageRef};
 use poise::serenity_prelude::model::Timestamp;
 use poise::serenity_prelude::CreateMessage;
 use poise::serenity_prelude::EntityType::Str;
@@ -61,16 +61,17 @@ pub async fn event_dispatcher(
                 Err(_) => return Ok(())
             };
 
-            let (author, content, is_available) = {
+            let (author, link, content, is_available) = {
                 let message = ctx.cache.message(channel_id, deleted_message_id);
                 match message {
-                    None => ("Unknown".to_string(), "".to_string(), false),
+                    None => ("Unknown".to_string(), "".to_string(), "".to_string(), false),
                     Some(m) => {
                         if m.author.bot{
                             return Ok(()); // Ignore bots
                         }
                         (
                             m.author.mention().to_string(),
+                            m.link().to_string(),
                             m.content.clone(),
                             true
                         )
@@ -84,38 +85,28 @@ pub async fn event_dispatcher(
                  CreateMessage::new().embed(
                     CreateEmbed::new()
                         .title("💬🗑️ Message deleted")
-                        .field("ID:", deleted_message_id.to_string(), false)
-                        .field("Channel:", channel_id.mention().to_string(), false)
-                        .field("Author:", author, false)
-                        .field({if is_available{
-                                    "Message:"
-                                } else {
-                                    "Message content unavailable."
-                                }
-                               }, content, false)
+                        .description(if is_available {
+                            format!("**Text:** {}", content)
+                        } else {
+                            "**Old content unavailable.**".to_string()
+                        })
+                        .field("Author:", author, true)
+                        .field(
+                            if link.is_empty() {"Channel:"} else {"Message:"},
+                            if link.is_empty() {channel_id.mention().to_string()} else {link},
+                            true)
+                        // todo include attachments / embeds
                         .color(Colour::DARK_RED)
+                        .footer(CreateEmbedFooter::new(format!("Message ID: {}", deleted_message_id)))
                     )
                 ).await?;
         }
         serenity::FullEvent::MessageUpdate { old_if_available, new, event } => {
-            if new.is_none(){
-                warn!("Failed to log edit due to a cache miss: {}", event.id);
-                return Ok(());
-            }
-
-            if new.clone().unwrap().author.bot{
-                return Ok(()); // Ignore messages from bots
-            }
-
-            let new_message = new.clone().unwrap();
-            let old_message = old_if_available.clone();
-            let guild_id = new_message.guild_id;
-
             // Exit if it's not a guild message
-            if guild_id.is_none(){
+            if event.guild_id.is_none(){
                 return Ok(());
             }
-            let guild_id = guild_id.unwrap();
+            let guild_id = event.guild_id.unwrap(); // We already exited if this was None
 
             // Exit if we don't log these
             let _lci = match data.database.get_guild_value(&guild_id, &"config.track_msg_edits").await {
@@ -125,6 +116,29 @@ pub async fn event_dispatcher(
                 Err(_) => return Ok(())
             };
 
+            // If the message isn't cached, try to fetch it
+            let new = if new.is_none(){
+                match event.channel_id.message(&ctx.http, event.id).await{
+                    Ok(m) => {
+                        Some(m) // Fetched it!
+                    },
+                    Err(e) => {
+                        warn!("Failed to log edit, fetch failed: {}", e);  // todo tell the user about it?
+                        return Ok(());
+                    },
+                }
+            }else{
+                new.clone() // We already had it cached
+            };
+
+            // Ignore messages from bots
+            if new.clone().unwrap().author.bot{
+                return Ok(());
+            }
+
+            let new_message = new.unwrap();
+            let old_message = old_if_available.clone();
+
             let (is_available, old_content) = {
                 match old_message {
                     None => (false, String::new()),
@@ -133,31 +147,29 @@ pub async fn event_dispatcher(
             };
             let new_content = new_message.content.clone();
 
+            // Exit if there's no change to the text
             if is_available && old_content == new_content{
                 return Ok(());
             }
 
-            // Log the message
+            // Log the event
             let log_channel_id = tools::to_channel(_lci.as_str()).unwrap();
             log_channel_id.send_message(&ctx.http,
                 CreateMessage::new().embed(
                     CreateEmbed::new()
                         .title("💬✏️ Message edited")
-                        .field("Author:", new_message.author.to_string(), false)
-                        .field("Channel:", new_message.channel_id.mention().to_string(), false)
-                        .field("Message:", new_message.link().to_string(), false)
-                        .field({
-                                   if is_available{
-                                       "Old:"
-                                   }else {
-                                       "Old message content unavailable."
-                                   }
-                               }, old_content, false)
-                        .field("New:", new_content, false)
+                        .description(if is_available {
+                            format!("**Old:** {}\n\n**New:** {}\n", old_content, new_content)
+                        } else {
+                            format!("**Old content unavailable.** \n**New:** {}", new_content)
+                        })
+                        .field("Author:", new_message.author.to_string(), true)
+                        .field("Message:", new_message.link().to_string(), true)
+                        // todo include attachments / embeds
                         .color(Colour::DARK_TEAL)
+                        .footer(CreateEmbedFooter::new(format!("Message ID: {}", new_message.id)))
                 )
             ).await?;
-            // todo use a diff instead of the full message twice
         }
         serenity::FullEvent::Message { new_message } => {
             // TODO
