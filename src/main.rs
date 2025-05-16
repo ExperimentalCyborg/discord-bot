@@ -1,7 +1,9 @@
+use std::time::Duration;
 use log::{debug, info, warn, error, LevelFilter};
 use clap::{Parser, crate_version, crate_description, crate_authors};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::model::Timestamp;
+use poise::serenity_prelude::Settings;
 use tokio::signal;
 use crate::database::Database;
 
@@ -174,12 +176,20 @@ async fn main() {
     };
 
     debug!("Setting up Serenity client");
+    let mut cache_settings = Settings::default();
+    cache_settings.max_messages = 5000;
+    cache_settings.time_to_live = Duration::from_secs(60*60*24*3);
+    
     let framework = poise::Framework::builder()
         .setup(move |ctx, _ready, framework| { Box::pin(async move { Ok(global_data) }) })
         .options(options)
         .build();
+    
     let mut client;
-    match serenity::ClientBuilder::new(token, intents).framework(framework).await {
+    match serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .cache_settings(cache_settings)
+        .await {
         Ok(c) => {
             client = c;
         }
@@ -188,7 +198,6 @@ async fn main() {
             std::process::exit(1);
         }
     }
-    client.cache.set_max_messages(5000);
 
     // Set up SIGTERM handling (Unix-only)
     #[cfg(unix)]
