@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       - DISCORD_BOT_TOKEN=${BOT_TOKEN}  # Define this value in the .env file
+      - FORTUNE_COOLDOWN=${FORTUNE_COOLDOWN:-86400}  # Default is 24 hours
     volumes:
       - bot-data:/data  # The SQLite database will be stored here, unless you specify an external database to use.
 

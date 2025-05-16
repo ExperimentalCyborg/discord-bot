@@ -175,9 +175,9 @@ impl Database {
 
         // Only update if the value has changed or the key didn't exist
         if existing_value.as_deref() != Some(value.to_string().as_str()) {
-            debug!("Setting user value: guild_id={}, key={}", user_id, key);
+            debug!("Setting user value: user_id={}, key={}", user_id, key);
             sqlx::query(
-                "INSERT OR REPLACE INTO user_kv (guild_id, key, value, updated_at)
+                "INSERT OR REPLACE INTO user_kv (user_id, key, value, updated_at)
              VALUES (?, ?, ?, CURRENT_TIMESTAMP)"
             )
                 .bind(user_id.to_string())
@@ -186,7 +186,7 @@ impl Database {
                 .execute(&*self.pool)
                 .await?;
         } else {
-            // Key exists with same value - no update needed
+            // Key exists with the same value - no update needed
             debug!("Value unchanged for user_id={}, key={}, skipping update", user_id, key);
         }
 

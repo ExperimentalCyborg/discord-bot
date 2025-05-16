@@ -37,6 +37,10 @@ struct Args {
     /// Log level for the log file
     #[arg(long, value_enum)]
     log_file_level: Option<LevelFilter>,
+    
+    /// Cooldown in seconds for the fortune command
+    #[arg(long)]
+    fortune_cooldown: Option<i64>,
 
     /// OpenAI compatible API URL. AI functions disabled when omitted.
     #[arg(long)]
@@ -56,6 +60,7 @@ pub struct Data {
     app_description: String,
     app_authors: String,
     database: Database,
+    fortune_cooldown: i64,
 }
 
 async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
@@ -106,6 +111,7 @@ async fn main() {
             commands::info(),
             commands::help(),
             commands::ping(),
+            commands::fortune(),
             commands::roll(),
             commands::number(),
             commands::coinflip(),
@@ -164,6 +170,7 @@ async fn main() {
         app_description: crate_description!().to_string(),
         app_authors: crate_authors!("\n").to_string(),
         database: db,
+        fortune_cooldown: args.fortune_cooldown.unwrap_or(600),
     };
 
     debug!("Setting up Serenity client");

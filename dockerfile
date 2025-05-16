@@ -20,6 +20,7 @@ VOLUME /data
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/target/release/discord-bot /app/discord-bot
+COPY --from=builder /app/fortune.json /app/
 
 # Set environment variable defaults. Don't forget to override this with your own bot token
 ENV DISCORD_BOT_TOKEN=""
@@ -30,6 +31,7 @@ RUN echo '#!/bin/sh\n\
 exec ./discord-bot \
 --db-path "$DB_PATH" \
 --bot-token "$DISCORD_BOT_TOKEN" \
+--fortune-cooldown $FORTUNE_COOLDOWN \
 "$@"' > /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

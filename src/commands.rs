@@ -412,3 +412,78 @@ pub async fn yesno(
     ).await?;
     Ok(())
 }
+
+/// Receive a fortune cookie
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
+pub async fn fortune(
+    ctx: Context<'_>,
+    #[description = "Don't show the result to anyone else"]
+    hide: Option<bool>,
+) -> Result<(), Error> {
+    // Defaults
+    let hide = hide.unwrap_or(false);
+
+    // Check if the user is in cooldown
+    let fortune_cooldown = ctx.data().fortune_cooldown;
+    let previous = ctx.data().database.get_user_value(&ctx.author().id, "fortune_last").await.unwrap();
+    let previous_time = ctx.data().database.get_user_value(&ctx.author().id, "fortune_last_time").await.unwrap();
+    let current_time = chrono::Utc::now().timestamp();
+    
+    if previous_time.is_some() {
+        // Convert previous_time to i64 (unix timestamp)
+        let last_time = previous_time.unwrap().parse::<i64>().unwrap_or(0);
+
+        // Check if the user is still in cooldown
+        if current_time - last_time < fortune_cooldown {
+            // Calculate remaining time
+            let remaining = fortune_cooldown - (current_time - last_time);
+            let hours = remaining / 3600;
+            let minutes = (remaining % 3600) / 60;
+            let seconds = remaining % 60;
+            
+            let mut text = format!("# ⏳ Cooldown\nYou must wait **{}h {}m {}s** before receiving another fortune.", hours, minutes, seconds);
+            if previous.is_some() {
+                text = format!("{}\nYour previous fortune was:\n> {}", text, previous.unwrap());
+            }
+
+            ctx.send(CreateReply::default()
+                .embed(CreateEmbed::new()
+                    .description(text)
+                    .color(Colour::DARK_ORANGE)
+                ).ephemeral(true)
+            ).await?;
+            return Ok(());
+        }
+    }
+
+    // Generate fortune
+    // fortune.json source: https://github.com/Supinic/supibot/blob/master/commands/cookie/fortune-cookies.json
+    let fortune = {
+        // Read the fortune.json file
+        let fortune_path = std::path::Path::new("fortune.json");
+        let fortune_file = std::fs::File::open(fortune_path).expect("Failed to open fortune.json");
+        let fortunes: Vec<serde_json::Value> = serde_json::from_reader(fortune_file).expect("Failed to parse fortune.json");
+
+        // Generate a random index
+        let mut generator = rng();
+        let range = Uniform::try_from(0..fortunes.len()).unwrap();
+        let index = range.sample(&mut generator);
+
+        // Extract the fortune text
+        fortunes[index]["text"].as_str().unwrap_or("Your future is cloudy at the moment.").to_string()
+    };
+
+    // Store current time and fortune in the database
+    ctx.data().database.set_user_value(&ctx.author().id, "fortune_last", &fortune).await?;
+    ctx.data().database.set_user_value(&ctx.author().id, "fortune_last_time", &current_time.to_string()).await?;
+
+    // Send the fortune to the user
+    ctx.send(CreateReply::default()
+        .embed(CreateEmbed::new()
+            .title("🥠 Your Fortune")
+            .description(fortune)
+            .color(Colour::GOLD)
+        ).ephemeral(hide)
+    ).await?;
+    Ok(())
+}
