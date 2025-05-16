@@ -13,9 +13,8 @@ Random generator:
 - Yes/No
 
 Resources
+- Fortune - get a random fortune cookie.
 - ~~Image search - get a random image from Unsplash based on given search terms.~~
-- ~~Fortune - get a random fortune cookie.~~
-- ~~Quote - get a random quote.~~
 
 ### Administrative
 - Message edit/delete tracking
