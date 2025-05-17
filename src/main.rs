@@ -10,7 +10,6 @@ use crate::database::Database;
 mod commands;
 mod events;
 mod database;
-mod ai;
 mod tools;
 
 // Types used by all command functions
@@ -44,13 +43,6 @@ struct Args {
     #[arg(long)]
     fortune_cooldown: Option<i64>,
 
-    /// OpenAI compatible API URL. AI functions disabled when omitted.
-    #[arg(long)]
-    openai_api_root: Option<String>,
-
-    /// API token for OpenAI compatible API, if required.
-    #[arg(long)]
-    openai_api_token: Option<String>,
 }
 
 // Custom user data passed to all command functions
