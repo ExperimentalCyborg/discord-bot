@@ -480,13 +480,14 @@ pub async fn fortune(
             let minutes = (remaining % 3600) / 60;
             let seconds = remaining % 60;
             
-            let mut text = format!("# ⏳ Cooldown\nYou must wait **{}h {}m {}s** before receiving another fortune.", hours, minutes, seconds);
+            let mut text = format!("You must wait **{}h {}m {}s** before receiving another fortune.", hours, minutes, seconds);
             if previous.is_some() {
                 text = format!("{}\nYour previous fortune was:\n> {}", text, previous.unwrap());
             }
 
             ctx.send(CreateReply::default()
                 .embed(CreateEmbed::new()
+                    .title("🥠⏳ Fortune cooldown")
                     .description(text)
                     .color(Colour::DARK_ORANGE)
                 ).ephemeral(true)
