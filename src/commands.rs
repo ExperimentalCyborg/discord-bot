@@ -249,6 +249,13 @@ pub async fn roll(
     let sides = sides.unwrap_or(6);
     let offset = offset.unwrap_or(0);
 
+    // Buy us some more time to think; for some reason some functions can be very slow
+    if hide {
+        ctx.defer_ephemeral().await.unwrap();
+    }else{
+        ctx.defer().await.unwrap();
+    }
+
     // Generate the random numbers we need
     let mut results: Vec<i32> = vec![];
     { // Ensure the compiler that rng (which isn't Send) gets dropped before the next await
@@ -305,6 +312,13 @@ pub async fn number(
     let lower = lower.unwrap_or(1);
     let upper = upper.unwrap_or(10);
 
+    // Buy us some more time to think; for some reason some functions can be very slow
+    if hide {
+        ctx.defer_ephemeral().await.unwrap();
+    }else{
+        ctx.defer().await.unwrap();
+    }
+
     if upper <= lower {
         ctx.send(CreateReply::default()
             .content(format!("{} - {} is not a valid range.", lower, upper))
@@ -350,6 +364,13 @@ pub async fn coinflip(
     let purpose = purpose.unwrap_or("".to_string());
     let hide = hide.unwrap_or(false);
 
+    // Buy us some more time to think; for some reason some functions can be very slow
+    if hide {
+        ctx.defer_ephemeral().await.unwrap();
+    }else{
+        ctx.defer().await.unwrap();
+    }
+
     // Generate the random number
     let result = {
         let mut generator = rng();
@@ -384,6 +405,13 @@ pub async fn yesno(
     // Defaults
     let purpose = purpose.unwrap_or("".to_string());
     let hide = hide.unwrap_or(false);
+
+    // Buy us some more time to think; for some reason some functions can be very slow
+    if hide {
+        ctx.defer_ephemeral().await.unwrap();
+    }else{
+        ctx.defer().await.unwrap();
+    }
 
     // Generate the random number
     let result = {
@@ -422,6 +450,14 @@ pub async fn fortune(
 ) -> Result<(), Error> {
     // Defaults
     let hide = hide.unwrap_or(false);
+    
+    // Buy us some more time to think; for some reason some functions can be very slow
+    if hide {
+        ctx.defer_ephemeral().await.unwrap();
+    }else{
+        ctx.defer().await.unwrap();
+    }
+    
 
     // Check if the user is in cooldown
     let fortune_cooldown = ctx.data().fortune_cooldown;
