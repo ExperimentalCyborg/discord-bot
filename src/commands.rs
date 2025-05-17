@@ -22,7 +22,7 @@ pub fn post_command(ctx: Context<'_>) {
     debug!("Executed command \"{}\" ID {}", ctx.command().qualified_name, ctx.id());
 }
 
-pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
+pub fn command_check(_: Context<'_>) -> Result<bool, Error> {
     // todo implement configurable bot-muted role that disables commands entirely for a user who has it
     // Ok(false) // Command does not get to run
     Ok(true) // Command gets to run
@@ -40,7 +40,8 @@ pub fn command_check(ctx: Context<'_>) -> Result<bool, Error> {
 ///
 /// Events will be logged to a channel that must be specified before the feature can be enabled.
 #[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", subcommands("trackjoinleaves", "trackmessageedits"), subcommand_required)]
-pub async fn track(_: Context<'_>) -> Result<(), Error> {
+pub async fn track(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await.unwrap();
     Ok(())
 }
 
@@ -147,6 +148,7 @@ pub async fn trackmessageedits_disable(ctx: Context<'_>) -> Result<(), Error> {
 /// Shows timing-related real time statistics about the bot.
 #[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
 pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await.unwrap();
     let now = Local::now();
     let latency_gateway = ctx.ping().await.as_millis() / 2; // Ping is both ways
     let latency_e2e = now.timestamp_millis() - ctx.created_at().timestamp_millis();
@@ -176,6 +178,7 @@ pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
 /// Get detailed info about the bot
 #[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
 pub async fn info(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await.unwrap();
     let now = Local::now();
     let latency_gateway = ctx.ping().await.as_millis() / 2; // Ping is both ways);
     let bot_id = ctx.cache().current_user().id.to_string();
