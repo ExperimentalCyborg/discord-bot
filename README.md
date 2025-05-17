@@ -13,9 +13,8 @@ Random generator:
 - Yes/No
 
 Resources
+- Fortune - get a random fortune cookie.
 - ~~Image search - get a random image from Unsplash based on given search terms.~~
-- ~~Fortune - get a random fortune cookie.~~
-- ~~Quote - get a random quote.~~
 
 ### Administrative
 - Message edit/delete tracking
@@ -27,23 +26,11 @@ Resources
 Event logs are sent to whichever text channel you specify. Each tracking feature has its own settings and can share the 
 same channel with other features if desired. Only a server admin can configure the bot.
 
-### ~~AI~~
-If you have an OpenAI API compatible endpoint available (for example your own ollama, an OpenAI subscription, or a cloud service), you can enable AI features.
-- When a user @ the bot with a question in a text channel, it'll join the conversation (until it is told to leave or gets ignored for a while).
-- While participating in conversations, the bot will learn and remember the personality of participating users. It will then apply this in later conversations.
-- Ask the bot one-off questions with a / command. It won't read chat or store any messages.
-- User access to AI features can be controlled by configuring an opt-in role. If configured, users without this role will be ignored by the bot and no information will be stored about them.
-- Optionally, AI features can require the server admin to enter their own API endpoint / credentials. This is globally disabled by default for security, since this can leak the IP of the machine this bot runs on.
-- Optionally, AI features can be allowlisted for specific discord servers only.
-
 ## Privacy
-The bot only communicates with the Discord gateway servers ~~, and optionally the OpenAI-compatible REST api you've 
-configured~~. You, the operator, have full control over the data ~~, and through the opt-in role for AI, so do your 
-discord server members. Make sure to allow your server members to opt-in themselves using reaction roles.~~
+The bot only communicates with the Discord gateway servers. You, the operator, have full control over the data.
 
 ## Data storage
-By default, the bot uses an embedded SQLite database which stores everything in a local file. 
-~~Optionally an external database like PostgreSQL can be used.~~
+The bot uses an embedded SQLite database which stores everything in a local file. 
 
 ## Running locally
 Install the Rust programming language compiler:
