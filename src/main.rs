@@ -11,6 +11,7 @@ mod commands;
 mod events;
 mod database;
 mod tools;
+mod ai;
 
 // Types used by all command functions
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -174,7 +175,7 @@ async fn main() {
     cache_settings.time_to_live = Duration::from_secs(60*60*24*3);
     
     let framework = poise::Framework::builder()
-        .setup(move |ctx, _ready, framework| { Box::pin(async move { Ok(global_data) }) })
+        .setup(move |_ctx, _ready, _framework| { Box::pin(async move { Ok(global_data) }) })
         .options(options)
         .build();
     

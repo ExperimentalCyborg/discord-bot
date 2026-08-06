@@ -25,6 +25,12 @@ COPY --from=builder /app/fortune.json /app/
 # Set environment variable defaults. Don't forget to override this with your own bot token
 ENV DISCORD_BOT_TOKEN=""
 ENV DB_PATH="/data/bot.sqlite"
+ENV OLLAMA_URL=""
+ENV OLLAMA_MODEL=""
+ENV AI_FORTUNETELLER_PERSONA=""
+ENV AI_FORTUNETELLER_THINKING=0
+ENV AI_CHAT_PERSONA=""
+ENV AI_CHAT_THINKING=0
 
 # Create an entrypoint script
 RUN echo '#!/bin/sh\n\

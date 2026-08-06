@@ -1,12 +1,12 @@
+#![allow(unused)] // Although some features are unused, I prefer to keep the module feature-complete.
+
 use std::fmt::Display;
-use std::num::NonZeroU64;
 use sqlx::{
     sqlite::{SqlitePool, SqlitePoolOptions},
     Error as SqlxError, Row,
 };
 use std::sync::Arc;
-use log::{debug, info, warn, error};
-use tokio::sync::Mutex;
+use log::{debug, info, warn};
 
 /// Database connection pool wrapper for key-value storage
 pub struct Database {

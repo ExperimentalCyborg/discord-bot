@@ -1,11 +1,9 @@
-use std::num::NonZeroU16;
-use log::{debug, info, warn, error};
-use poise::serenity_prelude::{Colour, CreateEmbed, CreateEmbedFooter, Mentionable, Message, MessageRef};
+use log::{debug, info, warn};
+use poise::serenity_prelude::{Colour, CreateEmbed, CreateEmbedFooter, Mentionable};
 use poise::serenity_prelude::model::Timestamp;
 use poise::serenity_prelude::CreateMessage;
-use poise::serenity_prelude::EntityType::Str;
 use crate::{serenity, tools};
-use crate::{Context, Data, Error};
+use crate::{Data, Error};
 
 pub async fn event_dispatcher(
     ctx: &serenity::Context,
@@ -17,7 +15,7 @@ pub async fn event_dispatcher(
         serenity::FullEvent::Ready { data_about_bot, .. } => {
             info!("Authenticated as {} ID {}", data_about_bot.user.name, data_about_bot.user.id);
         }
-        serenity::FullEvent::GuildCreate { guild, is_new, } => {
+        serenity::FullEvent::GuildCreate { guild, is_new: _is_new, } => {
             poise::builtins::register_in_guild(ctx, &framework.options().commands, guild.id).await?;
             let seen_before = data.database.get_guild_value(&guild.id, &"stats.first_join").await?;
             if seen_before.is_none(){
@@ -43,7 +41,7 @@ pub async fn event_dispatcher(
                 }
             }
         }
-        serenity::FullEvent::MessageDeleteBulk { channel_id, multiple_deleted_messages_ids, guild_id } => {
+        serenity::FullEvent::MessageDeleteBulk { channel_id: _channel_id, multiple_deleted_messages_ids: _multiple_deleted_messages_ids, guild_id: _guild_id } => {
             // todo
         }
         serenity::FullEvent::MessageDelete { channel_id, deleted_message_id, guild_id } => {
@@ -171,13 +169,13 @@ pub async fn event_dispatcher(
                 )
             ).await?;
         }
-        serenity::FullEvent::Message { new_message } => {
+        serenity::FullEvent::Message { new_message: _new_message } => {
             // TODO
         }
-        serenity::FullEvent::GuildBanAddition { guild_id, banned_user } => {
+        serenity::FullEvent::GuildBanAddition { guild_id: _guild_id, banned_user: _banned_user } => {
             // TODO
         }
-        serenity::FullEvent::GuildBanRemoval { guild_id, unbanned_user } => {
+        serenity::FullEvent::GuildBanRemoval { guild_id: _guild_id, unbanned_user: _unbanned_user } => {
             // todo
         }
         serenity::FullEvent::GuildMemberAddition { new_member } => {
@@ -266,16 +264,16 @@ pub async fn event_dispatcher(
                 )
             ).await?;
         }
-        serenity::FullEvent::GuildMemberUpdate { old_if_available, new, event } => {
+        serenity::FullEvent::GuildMemberUpdate { old_if_available: _old_if_available, new: _new, event: _event } => {
             // todo
         }
-        serenity::FullEvent::GuildUpdate { old_data_if_available, new_data } => {
+        serenity::FullEvent::GuildUpdate { old_data_if_available: _old_data_if_available, new_data } => {
             data.database.set_guild_value(&new_data.id, &"stats.name", &new_data.name).await?;
         }
-        serenity::FullEvent::GuildAuditLogEntryCreate { guild_id, entry } => {
+        serenity::FullEvent::GuildAuditLogEntryCreate { guild_id: _guild_id, entry: _entry } => {
 
         }
-        serenity::FullEvent::Resume { event } => {
+        serenity::FullEvent::Resume { event: _event } => {
             info!("Reconnected to gateway");
         }
         _ => {
