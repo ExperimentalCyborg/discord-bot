@@ -106,6 +106,7 @@ async fn main() {
             commands::help(),
             commands::ping(),
             commands::fortune(),
+            commands::fortune_reset(),
             commands::roll(),
             commands::number(),
             commands::coinflip(),

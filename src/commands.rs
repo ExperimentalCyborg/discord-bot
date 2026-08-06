@@ -442,7 +442,7 @@ pub async fn yesno(
 }
 
 /// Receive a fortune cookie
-#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES", subcommands("fortune_reset"))]
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
 pub async fn fortune(
     ctx: Context<'_>,
     #[description = "Don't show the result to anyone else"]
@@ -525,7 +525,7 @@ pub async fn fortune(
 }
 
 /// Reset a user's fortune cooldown
-#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "reset")]
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR")]
 pub async fn fortune_reset(
     ctx: Context<'_>,
     #[description = "Which user's fortune cooldown to reset"]
