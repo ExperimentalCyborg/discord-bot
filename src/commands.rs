@@ -506,7 +506,7 @@ pub async fn fortune(
         let index = range.sample(&mut generator);
 
         // Extract the fortune text
-        fortunes[index].to_string()
+        fortunes[index].as_str().unwrap().to_string()
     };
 
     // Store current time and fortune in the database
