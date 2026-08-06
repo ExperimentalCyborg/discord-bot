@@ -527,3 +527,18 @@ pub async fn fortune(
     ).await?;
     Ok(())
 }
+
+/// Remove a user's fortune cooldown
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR")]
+pub async fn fortune_reset(
+    ctx: Context<'_>,
+    #[description = "Which user's fortune cooldown to reset"]
+    user: poise::serenity_prelude::UserId,
+) -> Result<(), Error> {
+    ctx.data().database.set_user_value(&user, &"fortune_last_time", &"0").await?;
+    ctx.send(CreateReply::default()
+        .content(format!("<@{}>'s fortune cooldown has been reset.", user).to_string())
+        .ephemeral(true)
+    ).await?;
+    Ok(())
+}
