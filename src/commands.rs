@@ -1,13 +1,10 @@
-use std::path::absolute;
 use log::{debug};
 use poise::CreateReply;
 use poise::serenity_prelude::{Colour, CreateEmbed, CreateEmbedFooter, Mentionable};
 use crate::{Context, Error};
 use chrono::Local;
-use clap::builder::TypedValueParser;
 use rand::distr::{Distribution, Uniform};
 use rand::rng;
-use tokio::sync::mpsc::channel;
 // Hooks ->
 
 pub fn pre_command(ctx: Context<'_>) {
@@ -68,7 +65,7 @@ pub async fn trackjoinleaves_enable(
             .ephemeral(true)
         ).await.unwrap();
         return Ok(());
-    }else if _channel.unwrap().permissions_for_user(ctx.cache(), ctx.cache().current_user().id).unwrap().send_messages() == false {
+    }else if _channel.unwrap().permissions_for_user(ctx.cache(), ctx.cache().current_user().id)?.send_messages() == false {
         ctx.send(CreateReply::default()
             .content("I do not have permission to send messages to that channel.".to_string())
             .ephemeral(true)
@@ -86,7 +83,7 @@ pub async fn trackjoinleaves_enable(
 /// Disable user join/leave tracking
 #[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "disable")]
 pub async fn trackjoinleaves_disable(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.data().database.delete_guild_value(&ctx.guild_id().unwrap(), &"config.track_joinleaves").await.unwrap();
+    ctx.data().database.delete_guild_value(&ctx.guild_id().unwrap(), &"config.track_joinleaves").await?;
     ctx.send(CreateReply::default()
         .content("Join/leave tracking disabled.".to_string())
         .ephemeral(true)
@@ -117,14 +114,14 @@ pub async fn trackmessageedits_enable(
             .ephemeral(true)
         ).await.unwrap();
         return Ok(());
-    }else if _channel.unwrap().permissions_for_user(ctx.cache(), ctx.cache().current_user().id).unwrap().send_messages() == false {
+    }else if _channel.unwrap().permissions_for_user(ctx.cache(), ctx.cache().current_user().id)?.send_messages() == false {
         ctx.send(CreateReply::default()
             .content("I do not have permission to send messages to that channel.".to_string())
             .ephemeral(true)
         ).await.unwrap();
         return Ok(());
     }
-    ctx.data().database.set_guild_value(&ctx.guild_id().unwrap(), &"config.track_msg_edits", &channel).await.unwrap();
+    ctx.data().database.set_guild_value(&ctx.guild_id().unwrap(), &"config.track_msg_edits", &channel).await?;
     ctx.send(CreateReply::default()
         .content(format!("Message edit tracking enabled. Logging to {}", channel.mention()))
         .ephemeral(true)
@@ -135,11 +132,11 @@ pub async fn trackmessageedits_enable(
 /// Disable message edit tracking
 #[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "disable")]
 pub async fn trackmessageedits_disable(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.data().database.delete_guild_value(&ctx.guild_id().unwrap(), &"config.track_msg_edits").await.unwrap();
+    ctx.data().database.delete_guild_value(&ctx.guild_id().unwrap(), &"config.track_msg_edits").await?;
     ctx.send(CreateReply::default()
         .content("Message edit tracking disabled.".to_string())
         .ephemeral(true)
-    ).await.unwrap();
+    ).await?;
     Ok(())
 }
 
@@ -445,7 +442,7 @@ pub async fn yesno(
 }
 
 /// Receive a fortune cookie
-#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES")]
+#[poise::command(slash_command, default_member_permissions = "SEND_MESSAGES", subcommands("fortune_reset"))]
 pub async fn fortune(
     ctx: Context<'_>,
     #[description = "Don't show the result to anyone else"]
@@ -453,21 +450,20 @@ pub async fn fortune(
 ) -> Result<(), Error> {
     // Defaults
     let hide = hide.unwrap_or(false);
-    
+
     // Buy us some more time to think; for some reason some functions can be very slow
     if hide {
         ctx.defer_ephemeral().await.unwrap();
     }else{
         ctx.defer().await.unwrap();
     }
-    
 
     // Check if the user is in cooldown
     let fortune_cooldown = ctx.data().fortune_cooldown;
     let previous = ctx.data().database.get_user_value(&ctx.author().id, "fortune_last").await.unwrap();
     let previous_time = ctx.data().database.get_user_value(&ctx.author().id, "fortune_last_time").await.unwrap();
     let current_time = chrono::Utc::now().timestamp();
-    
+
     if previous_time.is_some() {
         // Convert previous_time to i64 (unix timestamp)
         let last_time = previous_time.unwrap().parse::<i64>().unwrap_or(0);
@@ -479,7 +475,7 @@ pub async fn fortune(
             let hours = remaining / 3600;
             let minutes = (remaining % 3600) / 60;
             let seconds = remaining % 60;
-            
+
             let mut text = format!("You must wait **{}h {}m {}s** before receiving another fortune.", hours, minutes, seconds);
             if previous.is_some() {
                 text = format!("{}\nYour previous fortune was:\n> {}", text, previous.unwrap());
@@ -497,7 +493,7 @@ pub async fn fortune(
     }
 
     // Generate fortune
-    // fortune.json source: https://github.com/Supinic/supibot/blob/master/commands/cookie/fortune-cookies.json
+    // Original fortune.json source: https://github.com/Supinic/supibot/blob/master/commands/cookie/fortune-cookies.json
     let fortune = {
         // Read the fortune.json file
         let fortune_path = std::path::Path::new("fortune.json");
@@ -528,8 +524,8 @@ pub async fn fortune(
     Ok(())
 }
 
-/// Remove a user's fortune cooldown
-#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR")]
+/// Reset a user's fortune cooldown
+#[poise::command(slash_command, default_member_permissions = "ADMINISTRATOR", rename = "reset")]
 pub async fn fortune_reset(
     ctx: Context<'_>,
     #[description = "Which user's fortune cooldown to reset"]
