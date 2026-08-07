@@ -44,6 +44,7 @@ struct Args {
     #[arg(long)]
     fortune_cooldown: Option<i64>,
 
+    // todo AI settings
 }
 
 // Custom user data passed to all command functions
@@ -108,6 +109,7 @@ async fn main() {
             commands::ping(),
             commands::fortune(),
             commands::fortune_reset(),
+            // todo fortuneteller only when AI is available
             commands::roll(),
             commands::number(),
             commands::coinflip(),
