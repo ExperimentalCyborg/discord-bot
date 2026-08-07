@@ -555,9 +555,9 @@ pub async fn yesno(
     if purpose.is_empty() {
         text = format!("# ❓ {}", result);
     } else if purpose.ends_with("?") {
-        text = format!("# ❓ {} {}", purpose, result);
+        text = format!("{}\n# ❓ {}", purpose, result);
     } else {
-        text = format!("# ❓ {}? {}", purpose, result);
+        text = format!("{}?\n# ❓ {}", purpose, result);
     }
 
     // Send the result to the user as an embed
